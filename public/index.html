@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Taste Trail</title>
+<style>body{font:16px system-ui;max-width:760px;margin:2rem auto;padding:0 1rem;color:#222}input{padding:.4rem;margin:.2rem}button{padding:.4rem .8rem}
+.chip{display:inline-block;background:#eef;border-radius:1rem;padding:.2rem .7rem;margin:.15rem}.stop{border-left:4px solid #6a5acd;padding:.3rem .8rem;margin:.8rem 0}small{color:#666}</style></head><body>
+<h1>Taste Trail</h1><p>Tell us what you love (artists, films, books, places). We turn it into a day in any city, using Qloo taste data.</p>
+<div><input id="q" placeholder="e.g. Radiohead"><button id="s">Add</button></div><div id="chips"></div>
+<div><input id="city" placeholder="City, e.g. San Luis Obispo"><button id="go">Plan my day</button></div><div id="out"></div>
+<script>
+const picks=[];const $=i=>document.getElementById(i);
+$('s').onclick=async()=>{const r=await (await fetch('/api/search?q='+encodeURIComponent($('q').value))).json();if(r[0]){picks.push(r[0]);$('chips').innerHTML=picks.map(p=>`<span class="chip">${esc(p.name)} <small>${esc(p.type)}</small></span>`).join('');$('q').value=''}};
+$('go').onclick=async()=>{if(!picks.length||!$('city').value){$('out').textContent='Add at least one favorite and a city.';return}
+$('out').textContent='Planning...';
+const d=await (await fetch('/api/trail?city='+encodeURIComponent($('city').value)+'&ids='+picks.map(p=>p.id).join(','))).json();
+if(d.error){$('out').textContent=d.error;return}
+const li=a=>(a||[]).map(x=>esc(x.name)).join(', ')||'none';
+$('out').innerHTML=d.stops.map(s=>`<div class="stop"><b>${s.slot}</b>: ${s.place?esc(s.place.name)+`<br><small>${esc(s.place.address)} ${s.place.tags.map(esc).join(' / ')}</small>`:'no match'}</div>`).join('')+`<p><b>Soundtrack:</b> ${li(d.soundtrack)}<br><b>Watch tonight:</b> ${li(d.watch)}<br><b>Read:</b> ${li(d.read)}</p>`};
+function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+</script></body></html>
